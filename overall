@@ -1,0 +1,125 @@
+// File: DBConnection.java
+package db;
+import java.sql.*;
+
+public class DBConnection {
+    public static Connection getConnection() throws Exception {
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/health_monitor", "root", "");
+    }
+}
+
+
+// File: InsertDataServlet.java
+package servlet;
+import db.DBConnection;
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import java.sql.*;
+
+public class InsertDataServlet extends HttpServlet {
+    protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+        String name = req.getParameter("name");
+        float temp = Float.parseFloat(req.getParameter("temp"));
+        int rate = Integer.parseInt(req.getParameter("rate"));
+        try {
+            Connection con = DBConnection.getConnection();
+            PreparedStatement ps = con.prepareStatement("INSERT INTO health_data (patient_name, temperature, heart_rate) VALUES (?, ?, ?)");
+            ps.setString(1, name);
+            ps.setFloat(2, temp);
+            ps.setInt(3, rate);
+            ps.executeUpdate();
+            res.sendRedirect("view");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+// File: ViewDataServlet.java
+package servlet;
+import db.DBConnection;
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import java.sql.*;
+
+public class ViewDataServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+        res.setContentType("text/html");
+        PrintWriter out = res.getWriter();
+        try {
+            Connection con = DBConnection.getConnection();
+            Statement st = con.createStatement();
+            ResultSet rs = st.executeQuery("SELECT * FROM health_data");
+            out.println("<h2>Patient Records</h2><table border='1'>");
+            out.println("<tr><th>Name</th><th>Temperature</th><th>Heart Rate</th><th>Timestamp</th></tr>");
+            while (rs.next()) {
+                out.println("<tr><td>" + rs.getString("patient_name") + "</td><td>" +
+                        rs.getFloat("temperature") + "</td><td>" +
+                        rs.getInt("heart_rate") + "</td><td>" +
+                        rs.getTimestamp("recorded_at") + "</td></tr>");
+            }
+            out.println("</table>");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+// File: index.jsp
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart Health Monitoring</title>
+</head>
+<body>
+    <h2>Enter Health Data</h2>
+    <form method="post" action="insert">
+        Name: <input type="text" name="name" /><br/>
+        Temperature: <input type="text" name="temp" /><br/>
+        Heart Rate: <input type="text" name="rate" /><br/>
+        <input type="submit" value="Submit"/>
+    </form>
+    <a href="view">View All Data</a>
+</body>
+</html>
+
+
+// File: web.xml
+<web-app>
+    <servlet>
+        <servlet-name>Insert</servlet-name>
+        <servlet-class>servlet.InsertDataServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>Insert</servlet-name>
+        <url-pattern>/insert</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>View</servlet-name>
+        <servlet-class>servlet.ViewDataServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>View</servlet-name>
+        <url-pattern>/view</url-pattern>
+    </servlet-mapping>
+</web-app>
+
+
+// File: health.sql
+CREATE DATABASE health_monitor;
+
+USE health_monitor;
+
+CREATE TABLE health_data (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_name VARCHAR(50),
+    temperature FLOAT,
+    heart_rate INT,
+    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
