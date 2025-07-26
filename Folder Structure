@@ -1,0 +1,16 @@
+SmartHealthMonitoring/
+├── WebContent/
+│   ├── index.jsp
+│   ├── dashboard.jsp
+│   ├── style.css
+│   └── WEB-INF/
+│       └── web.xml
+├── src/
+│   ├── db/
+│   │   └── DBConnection.java
+│   └── servlet/
+│       ├── InsertDataServlet.java
+│       └── ViewDataServlet.java
+├── health.sql
+├── README.md
+└── build.xml
